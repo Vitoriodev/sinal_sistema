@@ -68,4 +68,4 @@ while True:
         
         
     except TypeError:
-        print("erro")
+        print("erro de tipo de arquivo")
