@@ -3,6 +3,7 @@ import librosa
 import matplotlib.pyplot as plt
 from tkinter import Tk, filedialog
 from scipy.signal import find_peaks
+import customtkinter as ctk
 
 while True:
     
@@ -65,7 +66,25 @@ while True:
             
         else:
             print("somente arquivo de audio")
+            app = ctk.CTk()
+            app.geometry("300x200")
+            app.title("Opção 2")
+
+            label = ctk.CTkLabel(app, text="Arquivo não foi adicionado!", font=("Arial", 16))
+            label.pack(expand=True)
+
+            app.mainloop()
+            break
         
         
-    except TypeError:
+    except :
         print("erro de tipo de arquivo")
+        print("somente arquivo de audio")
+        app = ctk.CTk()
+        app.geometry("300x200")
+        app.title("Opção 2")
+
+        label = ctk.CTkLabel(app, text="Erro de de tipo de arquivo!", font=("Arial", 16))
+        label.pack(expand=True)
+
+        app.mainloop()

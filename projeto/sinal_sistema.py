@@ -2,7 +2,7 @@ import librosa
 import librosa.display
 import matplotlib.pyplot as plt
 from tkinter import Tk, filedialog
-
+import customtkinter as ctk
 
 # selecionar o arquivo de audio
 while True:
@@ -15,7 +15,7 @@ while True:
     caminho_de_audio = filedialog.askopenfilename( # vai abrir o explorado de arquivos 
         title="selecione um audio",
         filetypes=[("Arquivos de Áudio", "*.mp3 *.wav *.ogg *.flac"), ("Todos os arquivos", "*.*")] # esse vai mostra somentes os arquivos de audios 
-    )
+    )     
 
     # carregar os arquivos de audios
     # y = amplitude e sr = amostragem
@@ -36,3 +36,12 @@ while True:
         
     else:
         print("Nenhum arquivo foi selecionado")
+        app = ctk.CTk()
+        app.geometry("300x200")
+        app.title("Opção 1")
+
+        label = ctk.CTkLabel(app, text="Arquivo não foi adicionado!", font=("Arial", 16))
+        label.pack(expand=True)
+
+        app.mainloop()
+        break
