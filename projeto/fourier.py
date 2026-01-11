@@ -84,7 +84,7 @@ while True:
         app.geometry("300x200")
         app.title("Opção 2")
 
-        label = ctk.CTkLabel(app, text="Erro de de tipo de arquivo!", font=("Arial", 16))
+        label = ctk.CTkLabel(app, text="Erro de arquivo incompatível!", font=("Arial", 16))
         label.pack(expand=True)
 
         app.mainloop()
