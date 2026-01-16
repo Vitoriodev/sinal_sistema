@@ -31,6 +31,9 @@ class App(ctk.CTk):
         self.btn4 = ctk.CTkButton(self, text="Filtro Elétrico", command=self.electriFilter)
         self.btn4.pack(pady=10)
         
+        self.btn_sair = ctk.CTkButton(self, text="Sair", fg_color="red", hover_color="darkred", command=self.destroy)
+        self.btn_sair.pack(pady=10)
+        
         # Função genérica para abrir scripts
     def rodar_script(self, nome_arquivo):
         #  Pega o caminho da pasta onde este script que está salvo

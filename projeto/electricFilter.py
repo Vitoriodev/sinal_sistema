@@ -1,135 +1,187 @@
+import customtkinter as ctk
+import tkinter as tk
+from tkinter import filedialog
+import os
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import librosa
 import librosa.display
-from scipy.fft import fft, fftfreq, ifft
-from tkinter import Tk, filedialog
-import os
+from scipy.fft import fft, ifft, fftfreq
 
-def selecionar_audio(nome_do_tipo):
-    print(f"Selecione o arquivo de áudio para {nome_do_tipo}:")
-    root = Tk()
-    root.withdraw()
-    root.attributes('-topmost', True)
-    caminho_arquivo = filedialog.askopenfilename(
-        title=f"Selecione o arquivo de áudio para {nome_do_tipo}",
-        filetypes=[("Arquivos de áudio", "*.wav *.mp3 *.flac *.ogg"), ("Todos os arquivos", "*.*")]
-    )
-    root.destroy()
-    if caminho_arquivo:
-        print(f"Carregando: {os.path.basename(caminho_arquivo)}...")
-        y, sr = librosa.load(caminho_arquivo, sr=44100, mono=True)
-        return y, sr, os.path.basename(caminho_arquivo)
-    else:
+# Configuração do CustomTkinter
+ctk.set_appearance_mode("Dark")
+ctk.set_default_color_theme("blue")
+
+class App(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+        
+        self.title("Sistema de Filtragem de Áudio")
+        self.geometry("400x450")
+
+        # --- CONFIGURAÇÃO DA UI ---
+        self.label = ctk.CTkLabel(self, text="Processamento de Sinais", font=("Arial", 20, "bold"))
+        self.label.pack(pady=20)
+
+        self.btn1 = ctk.CTkButton(self, text="Isolar Grave (Passa-Baixa)", command=self.acao_opcao_1)
+        self.btn1.pack(pady=10)
+
+        self.btn2 = ctk.CTkButton(self, text="Isolar Agudo (Passa-Alta)", command=self.acao_opcao_2)
+        self.btn2.pack(pady=10)
+
+        self.btn3 = ctk.CTkButton(self, text="Isolar Médio (Passa-Faixa)", command=self.acao_opcao_3)
+        self.btn3.pack(pady=10)
+
+        self.status_label = ctk.CTkLabel(self, text="Status: Aguardando seleção...", text_color="gray")
+        self.status_label.pack(pady=20)
+
+        self.btn_sair = ctk.CTkButton(self, text="Sair", fg_color="red", hover_color="darkred", command=self.destroy)
+        self.btn_sair.pack(pady=10)
+
+        # --- CARREGAMENTO INICIAL DOS DADOS ---
+        # Vamos carregar os áudios assim que a classe iniciar
+        self.carregar_e_processar_inicial()
+
+    def selecionar_audio(self, nome_do_tipo):
+        print(f"Selecione o arquivo de áudio para {nome_do_tipo}...")
+        caminho_arquivo = filedialog.askopenfilename(
+            title=f"Selecione o áudio para {nome_do_tipo}",
+            filetypes=[("Áudios", "*.wav *.mp3 *.flac *.ogg"), ("Todos", "*.*")]
+        )
+        if caminho_arquivo:
+            # Carrega o áudio com librosa
+            y, sr = librosa.load(caminho_arquivo, sr=44100, mono=True)
+            return y, sr, os.path.basename(caminho_arquivo)
         return None, None, None
 
-# --- ETAPA 1: Carregamento dos Áudios ---
-print("--- Seleção dos Áudios ---")
-y_grave, sr_grave, nome_grave = selecionar_audio("GRAVE (Baixa Freq)")
-y_medio, sr_medio, nome_medio = selecionar_audio("MÉDIO (Média Freq)")
-y_agudo, sr_agudo, nome_agudo = selecionar_audio("AGUDO (Alta Freq)")
+    def carregar_e_processar_inicial(self):
+        # Esconde a janela principal momentaneamente enquanto carrega
+        self.withdraw()
+        
+        try:
+            print("--- Seleção dos Áudios ---")
+            # Carrega os 3 arquivos
+            self.y_grave, self.sr, self.nome_grave = self.selecionar_audio("GRAVE (Baixa Freq)")
+            self.y_medio, _, self.nome_medio = self.selecionar_audio("MÉDIO (Média Freq)")
+            self.y_agudo, _, self.nome_agudo = self.selecionar_audio("AGUDO (Alta Freq)")
 
-if y_grave is None or y_medio is None or y_agudo is None:
-    raise Exception("Cancelado: É necessário selecionar os três arquivos.")
+            if self.y_grave is None or self.y_medio is None or self.y_agudo is None:
+                print("Seleção cancelada. Fechando.")
+                self.destroy()
+                sys.exit()
 
-# Igualar tamanhos para somar
-min_len = min(len(y_grave), len(y_medio), len(y_agudo))
-y_grave, y_medio, y_agudo = y_grave[:min_len], y_medio[:min_len], y_agudo[:min_len]
+            # Igualar tamanhos
+            min_len = min(len(self.y_grave), len(self.y_medio), len(self.y_agudo))
+            self.y_grave = self.y_grave[:min_len]
+            self.y_medio = self.y_medio[:min_len]
+            self.y_agudo = self.y_agudo[:min_len]
 
-# Criar a mistura
-sinal_misturado = y_grave + y_medio + y_agudo
-fs = sr_grave
-N = len(sinal_misturado)
+            # Criar Mistura
+            self.sinal_misturado = self.y_grave + self.y_medio + self.y_agudo
+            self.N = len(self.sinal_misturado)
+            
+            # Pré-calcular FFT da mistura e frequências
+            self.freqs = fftfreq(self.N, d=1/self.sr)
+            self.omega = 2 * np.pi * self.freqs
+            self.X_mistura = fft(self.sinal_misturado)
 
-# --- ETAPA 2: Menu de Escolha do Filtro ---
-print("\nQual áudio você deseja isolar/recuperar?")
-print("1 - Grave (Usa Filtro Passa-Baixa)")
-print("2 - Agudo (Usa Filtro Passa-Alta)")
-print("3 - Médio (Usa Filtro Passa-Faixa)")
-escolha = input("Digite o número da opção (1, 2 ou 3): ")
+            print("Áudios carregados e misturados com sucesso!")
+            self.deiconify() # Mostra a janela novamente
+            self.status_label.configure(text="Status: Áudios carregados. Escolha um filtro.")
 
-# Definição das frequências angulares
-freqs = fftfreq(N, d=1/fs)
-omega = 2 * np.pi * freqs
+        except Exception as e:
+            print(f"Erro no carregamento: {e}")
+            self.destroy()
 
-# Lógica Matemática dos Filtros 
-fc_grave = 400   # Corte para o Passa-Baixa
-fc_agudo = 3000  # Corte para o Passa-Alta
+    # --- FUNÇÃO DE PROCESSAMENTO E PLOTAGEM ---
+    def gerar_graficos(self, H, alvo_original, nome_alvo, tipo_filtro):
+        # Calcular a saída no domínio da frequência
+        Y_saida = H * self.X_mistura
+        
+        # Voltar para o domínio do tempo (IFFT)
+        y_recuperado = ifft(Y_saida).real 
 
-if escolha == '1': # ISOLAR GRAVE
-    print(f"Isolando Grave com corte em {fc_grave}Hz...")
-    RC = 1 / (2 * np.pi * fc_grave)
-    H = 1 / (1 + 1j * omega * RC)
-    alvo_original = y_grave
-    nome_alvo = nome_grave
-    tipo_filtro = "Passa-Baixa (Low-Pass)"
+        # --- PLOTAGEM ---
+        plt.figure(figsize=(10, 10))
 
-elif escolha == '2': # ISOLAR AGUDO
-    print(f"Isolando Agudo com corte em {fc_agudo}Hz...")
-    RC = 1 / (2 * np.pi * fc_agudo)
-    H = (1j * omega * RC) / (1 + 1j * omega * RC)
-    alvo_original = y_agudo
-    nome_alvo = nome_agudo
-    tipo_filtro = "Passa-Alta (High-Pass)"
+        # 1. Domínio do Tempo (Mistura)
+        plt.subplot(3, 1, 1)
+        librosa.display.waveshow(self.sinal_misturado, sr=self.sr, color='gray', alpha=0.5)
+        plt.title('Entrada: Mistura dos 3 Áudios')
+        plt.ylabel('Amplitude')
 
-elif escolha == '3': # ISOLAR MÉDIO
-    print(f"Isolando Médio (entre {fc_grave}Hz e {fc_agudo}Hz)...")
-    RC_hp = 1 / (2 * np.pi * fc_grave) 
-    RC_lp = 1 / (2 * np.pi * fc_agudo) 
-    H_passa_alta = (1j * omega * RC_hp) / (1 + 1j * omega * RC_hp)
-    H_passa_baixa = 1 / (1 + 1j * omega * RC_lp)
-    H = H_passa_alta * H_passa_baixa 
-    alvo_original = y_medio
-    nome_alvo = nome_medio
-    tipo_filtro = "Passa-Faixa (Band-Pass)"
-else:
-    raise Exception("Opção inválida.")
+        # 2. Domínio da Frequência
+        limite_vis = np.argmax(self.freqs > 8000) 
+        plt.subplot(3, 1, 2)
+        plt.plot(self.freqs[:limite_vis], np.abs(self.X_mistura[:limite_vis]), color='lightgray', label='Entrada (Mistura)')
+        plt.plot(self.freqs[:limite_vis], np.abs(Y_saida[:limite_vis]), color='blue', linewidth=1.5, label='Saída Filtrada')
+        plt.title(f"Espectro de Frequência: {tipo_filtro}")
+        plt.legend()
+        plt.grid(True, alpha=0.3)
 
-# --- ETAPA 3: Processamento (Freq e Tempo) ---
-X_mistura = fft(sinal_misturado)
-Y_saida = H * X_mistura
-X_alvo_original = fft(alvo_original)
+        # 3. Comparação Final (Tempo)
+        plt.subplot(3, 1, 3)
+        trecho = int(0.05 * self.sr) # Zoom de 50ms
+        tempo_eixo = np.linspace(0, 0.05, trecho)
+        
+        plt.plot(tempo_eixo, y_recuperado[:trecho], color='blue', linewidth=1.5, label='Recuperado (IFFT)')
+        plt.plot(tempo_eixo, alvo_original[:trecho], color='green', linestyle='--', alpha=0.7, label=f'Original ({nome_alvo})')
+        plt.title("Validação: Comparação da Forma de Onda (Zoom 50ms)")
+        plt.xlabel("Tempo (s)")
+        plt.legend()
+        plt.grid(True, alpha=0.3)
 
-# [NOVO] Obtendo a resposta de saída no tempo (IFFT)
-# y(t) = Inversa de Fourier da Saída
-y_recuperado = ifft(Y_saida).real 
+        plt.tight_layout()
+        plt.show()
 
-# --- ETAPA 4: Plotagem ---
-plt.figure(figsize=(12, 12))
+    # --- AÇÕES DOS BOTÕES ---
+    
+    def acao_opcao_1(self):
+        # Filtro Passa-Baixa (Isolar Grave)
+        fc = 400
+        RC = 1 / (2 * np.pi * fc)
+        H = 1 / (1 + 1j * self.omega * RC)
+        
+        print(f"Aplicando Passa-Baixa ({fc}Hz)...")
+        self.gerar_graficos(H, self.y_grave, self.nome_grave, "Passa-Baixa (Low-Pass)")
 
-# Plot 1: Domínio do Tempo (Entrada Misturada)
-plt.subplot(3, 1, 1)
-librosa.display.waveshow(sinal_misturado, sr=fs, color='gray', alpha=0.5)
-plt.title('Entrada: Mistura dos 3 Áudios (Tempo)')
-plt.ylabel('Amplitude')
+    def acao_opcao_2(self):
+        # Filtro Passa-Alta (Isolar Agudo)
+        fc = 3000
+        RC = 1 / (2 * np.pi * fc)
+        H = (1j * self.omega * RC) / (1 + 1j * self.omega * RC)
+        
+        print(f"Aplicando Passa-Alta ({fc}Hz)...")
+        self.gerar_graficos(H, self.y_agudo, self.nome_agudo, "Passa-Alta (High-Pass)")
 
-# Configuração do eixo X para freq
-limite_visualizacao = np.argmax(freqs > 8000) 
+    def acao_opcao_3(self):
+        # Filtro Passa-Faixa (Isolar Médio)
+        fc_grave = 400
+        fc_agudo = 3000
+        RC_hp = 1 / (2 * np.pi * fc_grave)
+        RC_lp = 1 / (2 * np.pi * fc_agudo)
+        
+        # Cascata: Passa-Alta * Passa-Baixa
+        H_passa_alta = (1j * self.omega * RC_hp) / (1 + 1j * self.omega * RC_hp)
+        H_passa_baixa = 1 / (1 + 1j * self.omega * RC_lp)
+        H = H_passa_alta * H_passa_baixa
+        
+        print(f"Aplicando Passa-Faixa ({fc_grave}-{fc_agudo}Hz)...")
+        self.gerar_graficos(H, self.y_medio, self.nome_medio, "Passa-Faixa (Band-Pass)")
 
-# Plot 2: Domínio da Frequência (Entrada vs Saída Filtrada)
-plt.subplot(3, 1, 2)
-plt.plot(freqs[:limite_visualizacao], np.abs(X_mistura[:limite_visualizacao]), color='lightgray', label='Entrada (Sujo)')
-plt.plot(freqs[:limite_visualizacao], np.abs(Y_saida[:limite_visualizacao]), color='blue', linewidth=1.5, label='Saída Filtrada Y(jw)')
-plt.title(f"Espectro de Frequência: {tipo_filtro}")
-plt.ylabel("Magnitude")
-plt.legend()
-plt.grid(True, alpha=0.3)
+if __name__ == "__main__":
+    app = App()
+    app.mainloop()
+    
+'''except:
+    print("erro de tipo de arquivo")
+    print("somente arquivo de audio")
+    app = ctk.CTk()
+    app.geometry("300x200")
+    app.title("Análise Espectral")
 
-# [ALTERADO] Plot 3: Domínio do Tempo (Saída Recuperada vs Original)
-plt.subplot(3, 1, 3)
+    label = ctk.CTkLabel(app, text="Erro de arquivo incompatível!", font=("Arial", 16))
+    label.pack(expand=True)
 
-# Zoom de 50ms para ver a forma de onda
-trecho = int(0.05 * fs)
-tempo_eixo = np.linspace(0, 0.05, trecho)
-
-plt.plot(tempo_eixo, y_recuperado[:trecho], color='blue', linewidth=1.5, label='Sua Resposta y(t) (IFFT)')
-plt.plot(tempo_eixo, alvo_original[:trecho], color='green', linestyle='--', alpha=0.7, label=f'Original: {nome_alvo}')
-
-plt.title("Validação Final: Comparação da Forma de Onda (Zoom 50ms)")
-plt.xlabel("Tempo (s)")
-plt.ylabel("Amplitude")
-plt.legend()
-plt.grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.show()
+    app.mainloop()'''
