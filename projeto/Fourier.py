@@ -73,6 +73,7 @@ try:
         """Abre uma janela para selecionar os arquivos de áudio gravados."""
         root = tk.Tk()
         root.withdraw() # Oculta a janela principal do Tkinter
+        root.attributes("-topmost", True)
         # Filtro para aceitar apenas os formatos que convertemos e testamos
         caminho = filedialog.askopenfilename(
             title=titulo, 
@@ -133,6 +134,7 @@ try:
         plt.show()
     else:
         print("Erro: Todos os 4 arquivos devem ser selecionados para a análise conjunta.")
+        
 except:
     print("erro de tipo de arquivo")
     print("somente arquivo de audio")
