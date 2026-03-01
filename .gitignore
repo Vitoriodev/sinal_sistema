@@ -3,7 +3,11 @@
 venv/
 env/
 ENV/
-
+.venv/
+.venv/
+venv/
+env/
+__pycache__/
 # Python cache files
 __pycache__/
 *.pyc
@@ -68,4 +72,4 @@ env/
 venv/
 ENV/
 env.bak/
-venv.bak/
+venv.bak/.venv/

@@ -20,16 +20,16 @@ class App(ctk.CTk):
         self.label.pack(pady=20)
         
         # botões
-        self.btn1 = ctk.CTkButton(self, text="Gráfico no Domínio ", command=self.sinal_sistema)
+        self.btn1 = ctk.CTkButton(self, text="Gráfico no Domínio ", command=self.Grafico_Dominio)
         self.btn1.pack(pady=10)
 
-        self.btn2 = ctk.CTkButton(self, text="Gráficos de Fourier", command=self.fourier)
+        self.btn2 = ctk.CTkButton(self, text="Gráficos de Fourier", command=self.Grafico_Fourier)
         self.btn2.pack(pady=10)
 
-        self.btn3 = ctk.CTkButton(self, text="Análise Espectral", command=self.Fourier)
+        self.btn3 = ctk.CTkButton(self, text="Análise Espectral", command=self.Analise_Espectral)
         self.btn3.pack(pady=10)
 
-        self.btn4 = ctk.CTkButton(self, text="Filtro Elétrico", command=self.electricFilter)
+        self.btn4 = ctk.CTkButton(self, text="Filtro Elétrico", command=self.Filtro_Eletrico)
         self.btn4.pack(pady=10)
         
         self.btn_sair = ctk.CTkButton(self, text="Sair", fg_color="red", hover_color="darkred", command=self.destroy)
@@ -54,17 +54,17 @@ class App(ctk.CTk):
             print(f"Arquivos na pasta: {os.listdir(pasta_do_projeto)}")
 
     # Funções específicas para cada botão
-    def sinal_sistema(self):
-        self.rodar_script("sinal_sistema.py")
+    def Grafico_Dominio(self):
+        self.rodar_script("Grafico_Dominio.py")
 
-    def fourier(self):
-        self.rodar_script("fourier.py")
+    def Grafico_Fourier(self):
+        self.rodar_script("Grafico_Fourier.py")
 
-    def Fourier(self):
-        self.rodar_script("Fourier.py")
+    def Analise_Espectral(self):
+        self.rodar_script("Analise_Espectral.py")
         
-    def electricFilter(self):
-        self.rodar_script("electricFilter.py")
+    def Filtro_Eletrico(self):
+        self.rodar_script("Filtro_Eletrico.py")
 
 if __name__ == "__main__":
     app = App()
